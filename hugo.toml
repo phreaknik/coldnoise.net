@@ -1,8 +1,11 @@
 baseURL = 'https://coldnoise.net/'
 languageCode = 'en-us'
-title = 'Cold Noise Thoughts'
-theme = 'plague'
+title = 'Cold Noise Blog'
+theme = 'PaperMod'
 enableEmoji = true
+
+[outputs]
+home = ["HTML", "RSS", "JSON"]
 
 [markup]
   [markup.goldmark]
@@ -10,39 +13,55 @@ enableEmoji = true
       unsafe = true
 
 [params]
-  copyright = "© 2024 John Boyd"
-  siteHeaderText = "Cold Noise Thoughts"
-  siteFooterText = ""
-  customStylesheet = "/css/custom.css"
+  # PaperMod specific settings
+  defaultTheme = "auto" # auto, light, dark
+  ShowReadingTime = true
+  ShowShareButtons = false
+  ShowCodeCopyButtons = true
+  disableThemeToggle = false
+  ShowToc = true
 
-  # Color scheme options:
-  # - "default" (auto dark/light based on user preference)
-  # - "gibson" (alternative color scheme, auto dark/light)
-  # - "default-light" (force light mode)
-  # - "default-dark" (force dark mode)
-  # - "gibson-light" (force gibson light mode)
-  # - "gibson-dark" (force gibson dark mode)
-  colors = "default"
+  # Site info
+  copyright = "© 2025 John Boyd"
+  description = "Personal blog by John Boyd"
 
-  [params.hcard]
-    fullName = "John Boyd"
-    avatar = "images/avatar.jpeg"
+  [params.editPost]
+    URL = "https://github.com/phreaknik/coldnoise.net/tree/master/content"
+    Text = "Suggest Changes" # edit text
+    appendFilePath = true # to append file path to Edit link
 
-    social = [
-      { platform = "email", identity = "hello@coldnoise.net", url_pattern = "mailto:%s" },
-      { platform = "github", identity = "phreaknik", url_pattern = "https://github.com/%s" },
-    ]
+  # PaperMod home page info mode
+  [params.homeInfoParams]
+    Title = "Cold Noise Blog"
+    Content = "Personal blog by John Boyd"
+
+  # Social links for PaperMod
+  [[params.socialIcons]]
+    name = "email"
+    url = "mailto:hello@coldnoise.net"
+
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/phreaknik"
   
 [menu]
   [[menu.main]]
-    name = "About"
-    url = "/about/"
-    weight = 2
+    name = "RSS"
+    url = "/posts/index.xml"
+    weight = 0
   [[menu.main]]
     name = "Posts"
     url = "/posts/"
     weight = 1
   [[menu.main]]
-    name = "RSS"
-    url = "/posts/index.xml"
-    weight = 0
+    name = "Archive"
+    url = "/archives/"
+    weight = 2
+  [[menu.main]]
+    name = "About"
+    url = "/about/"
+    weight = 3
+  [[menu.main]]
+    name = "Search"
+    url = "/search/"
+    weight = 4

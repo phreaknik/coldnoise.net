@@ -1,5 +1,0 @@
-{{- $filename := (printf "icons/%s.svg" .) -}}
-{{- $svg_old := "<svg" -}}
-{{- $svg_new := "<svg aria-hidden=\"true\"" }}
-{{- $fill := replace (readFile $filename) $svg_old $svg_new -}}
-{{- $fill | safeHTML -}}

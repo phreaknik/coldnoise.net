@@ -1,6 +1,7 @@
 ---
 layout: standalone
 title: About
+ShowToC: false
 ---
 <img src="headshot.jpeg" alt="Headshot photo" style="float: left; margin-right: 20px; margin-bottom: 10px; width: 210px;">
 
