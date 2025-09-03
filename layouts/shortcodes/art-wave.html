@@ -1,0 +1,179 @@
+{{/* Parse shortcode parameters */}}
+{{ $height := .Get "height" }}
+{{ $width := .Get "width" }}
+{{/* Generate unique ID for this instance */}}
+{{ $uniqueID := printf "wave-container-%d" now.UnixNano }}
+
+<style>
+    #{{ $uniqueID }} {
+        font-size: 14px;
+        line-height: 1.2;
+        white-space: pre;
+        letter-spacing: 0.1em;
+        text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+        cursor: crosshair;
+        user-select: none;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        padding: 10px;
+        box-sizing: border-box;
+        color: var(--text-color);
+        background: var(--background-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        #{{ $uniqueID }} {
+            font-size: 10px;
+            padding: 5px;
+            letter-spacing: 0.05em;
+        }
+    }
+
+    @media (max-width: 480px) {
+        #{{ $uniqueID }} {
+            font-size: 8px;
+            padding: 2px;
+            letter-spacing: 0;
+        }
+    }
+</style>
+
+<div style="
+    {{- if $height -}}
+        height: {{ $height }}px;
+    {{- else -}}
+        height: 100%;
+    {{- end -}}
+    {{- if $width -}}
+        {{ $widthPercent := mul (float $width) 100 -}}
+        width: {{ $widthPercent }}%;
+    {{- else -}}
+        width: 100%;
+    {{- end -}}
+    position: relative;
+    overflow: hidden;
+    {{ if not $height }}flex: 1;{{ end }}
+    display: flex;">
+    <div id="{{ $uniqueID }}"></div>
+</div>
+
+<script>
+    (function () {
+        // Const parameters
+        const waveContainer = document.getElementById('{{ $uniqueID }}');
+        const waveSpeed = 0.03;
+        const waveHeight = 5;
+        const turbulence = 0;
+        const density = 5;
+        const waveChars = ['~', '≈', '∼', '~', '～', '〜', '⁓', '˜'];
+        const peakChars = ['▓', '▒', '░', '█', '▄', '▀'];
+        const sparkleChars = ['✦', '✧', '⋆', '✵', '✶', '✷', '✸'];
+
+        // Runtime vars
+        let fontSize = parseInt(window.getComputedStyle(waveContainer).fontSize);
+        let time = 0;
+        let mouseX = 0.5;
+        let mouseY = 0.5;
+        let width = 0;
+        let height = 0;
+
+        // Dynamically adjust dimensions based on viewport
+        function updateDimensions() {
+            const rect = waveContainer.getBoundingClientRect();
+            const charWidth = fontSize * 0.4;
+            const lineHeight = fontSize * 1.2;
+            width = Math.floor(rect.width / charWidth);
+            height = Math.floor(rect.height / lineHeight);
+        }
+
+        function generateWave() {
+            // Thresholds to determine what character to draw at different wave intensities
+            const peakThresh = (0.5 * density / 5)
+            const waveThresh = (2 * density / 5)
+            const peripheryThresh = (3 * density / 5)
+
+            // Chance of a wave character becoming a sparkle
+            const sparkleChance = 0.005
+
+            let output = '';
+            for (let y = 0; y < height; y++) {
+                let line = '';
+
+                for (let x = 0; x < width; x++) {
+                    // Base wave functions - create continuous wave that flows right to left
+                    const wave1 = Math.sin((x * 0.1) + time) * waveHeight;
+                    const wave2 = Math.sin((x * 0.05 + y * 0.1) - time * 0.7) * (waveHeight * 0.6);
+                    const wave3 = Math.cos((x * 0.08 - y * 0.05) + time * 1.2) * (waveHeight * 0.4);
+
+                    // Mouse influence
+                    const mouseDist = Math.sqrt((x / width - mouseX) ** 2 + (y / height - mouseY) ** 2);
+                    const mouseEffect = Math.sin(mouseDist * 10 - time * 2) * (1 - mouseDist) * 3;
+
+                    // Combine all effects to get the wave intensity at this x,y
+                    const combined = wave1 + wave2 + wave3 + mouseEffect;
+                    const normalizedY = (y - height / 2) / 3;
+                    const intensity = combined - normalizedY;
+
+                    // Select char based on wave intensity
+                    let char = ' ';
+                    if (Math.abs(intensity) < peakThresh) {
+                        const charIndex = Math.floor(Math.abs(combined) * 10) % peakChars.length;
+                        char = peakChars[charIndex];
+                    } else if (Math.abs(intensity) < waveThresh) {
+                        const charIndex = Math.floor((x - time * 10) % waveChars.length);
+                        char = waveChars[Math.abs(charIndex) % waveChars.length];
+                    } else if (Math.abs(intensity) < peripheryThresh) {
+                        char = Math.random() > 0.7 ? '·' : (Math.random() > 0.5 ? '.' : ' ');
+                    }
+
+                    // Random sparkles
+                    if (char !== ' ' && Math.random() < sparkleChance) {
+                        char = sparkleChars[Math.floor(Math.random() * sparkleChars.length)];
+                    }
+
+                    // Add character to point on scan line
+                    line += char
+                }
+                output += `<span class="wave-line">${line}</span>\n`;
+            }
+
+            // Draw the new output
+            waveContainer.innerHTML = output;
+
+            // Advance time for the next frame
+            time += waveSpeed;
+        }
+
+        // Animation loop
+        function animate() {
+            generateWave();
+            requestAnimationFrame(animate);
+        }
+
+        // Mouse movement
+        waveContainer.addEventListener('mousemove', (e) => {
+            const rect = waveContainer.getBoundingClientRect();
+            mouseX = (e.clientX - rect.left) / rect.width;
+            mouseY = (e.clientY - rect.top) / rect.height;
+        });
+
+        // Touch support
+        waveContainer.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const rect = waveContainer.getBoundingClientRect();
+            mouseX = (touch.clientX - rect.left) / rect.width;
+            mouseY = (touch.clientY - rect.top) / rect.height;
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            updateDimensions();
+        });
+
+        // Initialize and start animation immediately
+        updateDimensions();
+        animate();
+    })();
+</script>

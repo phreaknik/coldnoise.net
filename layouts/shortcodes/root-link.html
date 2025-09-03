@@ -1,0 +1,15 @@
+{{/*
+  root-link shortcode
+
+  Creates a link to any file in the site's root directory (static folder).
+  Automatically handles baseURL path changes (e.g., /coldnoise.net/ on GitHub Pages vs / on custom domain).
+
+  Usage:
+    {{< root-link file="filename.ext" text="Link Text" >}}
+
+  Example:
+    {{< root-link file="781C65EEE6ACD2BB7E0DB7691A6E2D470A6F6535.asc" text="PGP Key" >}}
+
+  The relURL function prepends the correct path from baseURL automatically.
+*/}}
+<a href="{{ .Get 0 | relURL }}">{{ .Get 1 }}</a>
