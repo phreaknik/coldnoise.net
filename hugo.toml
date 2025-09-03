@@ -1,0 +1,48 @@
+baseURL = 'https://coldnoise.net/'
+languageCode = 'en-us'
+title = 'Cold Noise Thoughts'
+theme = 'plague'
+enableEmoji = true
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
+
+[params]
+  copyright = "© 2024 John Boyd"
+  siteHeaderText = "Cold Noise Thoughts"
+  siteFooterText = ""
+  customStylesheet = "/css/custom.css"
+
+  # Color scheme options:
+  # - "default" (auto dark/light based on user preference)
+  # - "gibson" (alternative color scheme, auto dark/light)
+  # - "default-light" (force light mode)
+  # - "default-dark" (force dark mode)
+  # - "gibson-light" (force gibson light mode)
+  # - "gibson-dark" (force gibson dark mode)
+  colors = "default"
+
+  [params.hcard]
+    fullName = "John Boyd"
+    avatar = "images/avatar.jpeg"
+
+    social = [
+      { platform = "email", identity = "hello@coldnoise.net", url_pattern = "mailto:%s" },
+      { platform = "github", identity = "phreaknik", url_pattern = "https://github.com/%s" },
+    ]
+  
+[menu]
+  [[menu.main]]
+    name = "About"
+    url = "/about/"
+    weight = 2
+  [[menu.main]]
+    name = "Posts"
+    url = "/posts/"
+    weight = 1
+  [[menu.main]]
+    name = "RSS"
+    url = "/posts/index.xml"
+    weight = 0
