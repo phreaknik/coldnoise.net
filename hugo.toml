@@ -1,3 +1,18 @@
-baseURL = 'https://example.org/'
+baseURL = 'https://phreaknik.github.io/coldnoise.net/'
 languageCode = 'en-us'
-title = 'My New Hugo Site'
+title = 'Thermal Noise H8r'
+theme = 'plague'
+
+[params]
+  subtitle = "Your subtitle here"
+  copyright = "© 2024 Your Name"
+  
+[menu]
+  [[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+  [[menu.main]]
+    name = "Posts"
+    url = "/posts/"
+    weight = 2
