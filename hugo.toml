@@ -2,10 +2,33 @@ baseURL = 'https://phreaknik.github.io/coldnoise.net/'
 languageCode = 'en-us'
 title = 'Thermal Noise H8r'
 theme = 'plague'
+enableEmoji = true
 
 [params]
-  subtitle = "Your subtitle here"
-  copyright = "© 2024 Your Name"
+  copyright = "© 2024 John Boyd"
+  siteHeaderText = "Thermal Noise H8r"
+  siteFooterText = """\
+    Hand-crafted by a genuine human. Though honestly, an LLM would probably be
+    more entertaining.\
+    """
+
+  # Color scheme options:
+  # - "default" (auto dark/light based on user preference)
+  # - "gibson" (alternative color scheme, auto dark/light)
+  # - "default-light" (force light mode)
+  # - "default-dark" (force dark mode)
+  # - "gibson-light" (force gibson light mode)
+  # - "gibson-dark" (force gibson dark mode)
+  colors = "gibson"
+
+  [params.hcard]
+    fullName = "John Boyd"
+    avatar = "images/avatar.jpeg"
+
+    social = [
+      { platform = "email", identity = "hello@coldnoise.net", url_pattern = "mailto:%s" },
+      { platform = "github", identity = "phreaknik", url_pattern = "https://github.com/%s" },
+    ]
   
 [menu]
   [[menu.main]]
