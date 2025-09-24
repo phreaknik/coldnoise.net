@@ -1,0 +1,15 @@
+<div class="footer-container">
+    <div class="h-card bio">
+        {{- partial "hcard.html" . -}}
+    </div>
+    {{- with .Site.Params.SiteFooterText -}}
+    <div class="footer-text footer-right">
+        <p>
+            {{ . | markdownify }}
+        </p>
+    </div>
+    {{- end -}}
+</div>
+<div class="h-card social">
+    {{ partial "social.html" . -}}
+</div>

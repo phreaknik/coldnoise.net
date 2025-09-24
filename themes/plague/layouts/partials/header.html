@@ -1,0 +1,14 @@
+<div class="header-container">
+    <div class="site-header">
+        <a class="site-header" href="{{ .Site.BaseURL }}">{{ .Site.Params.siteHeaderText }}</a>
+    </div>
+    <div class="site-nav">
+        <nav aria-label="Site menu" class="site-nav">
+            {{- $currentPage := . -}}
+            {{- range $index, $element := .Site.Menus.main -}}
+            {{- $len_nav_items := (len $.Site.Menus.main) -}}
+            <a class="nav-item{{ if or ($currentPage.IsMenuCurrent "main" .) ($currentPage.HasMenuCurrent "main" .) }} active{{ end }}{{ if eq $index 0 }} first{{ end }}{{ if eq (add $index 1) $len_nav_items }} last{{ end }}" href="{{ .URL }}">{{ .Name }}</a>
+            {{- end }}
+        </nav>
+    </div>
+</div>
