@@ -16,9 +16,13 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            height: 100%;
             color: var(--text-color);
             position: relative;
+        }
+
+        html {
+            height: 100%;
         }
         
         #wave-container {
@@ -32,7 +36,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            padding: 20px;
+            padding: 10px;
             box-sizing: border-box;
         }
         
@@ -42,7 +46,17 @@
         /* Responsive adjustments */
         @media (max-width: 768px) {
             #wave-container {
+                font-size: 10px;
+                padding: 5px;
+                letter-spacing: 0.05em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #wave-container {
                 font-size: 8px;
+                padding: 2px;
+                letter-spacing: 0;
             }
         }
     </style>
@@ -55,7 +69,7 @@
 
         let width = 80;
         let height = 30;
-        let fontSize = 14;
+        let fontSize = window.innerWidth < 480 ? 8 : (window.innerWidth < 768 ? 10 : 14);
 
         const waveChars = ['~', '≈', '∼', '~', '～', '〜', '⁓', '˜'];
         const peakChars = ['▓', '▒', '░', '█', '▄', '▀'];
@@ -72,13 +86,20 @@
         // Dynamically adjust dimensions based on viewport
         function updateDimensions() {
             const rect = waveContainer.getBoundingClientRect();
-            const containerWidth = rect.width - 40; // Account for padding
-            const containerHeight = rect.height - 40; // Account for padding
+            const containerPadding = window.innerWidth < 480 ? 4 : (window.innerWidth < 768 ? 10 : 20);
+            const containerWidth = rect.width - containerPadding;
+            const containerHeight = rect.height - containerPadding;
             const charWidth = fontSize * 0.6;
             const lineHeight = fontSize * 1.2;
-            // Slightly reduce width to prevent horizontal overflow
-            width = Math.min(150, Math.max(60, Math.floor(containerWidth / charWidth) - 2));
-            height = Math.max(30, Math.floor(containerHeight / lineHeight));
+
+            // Adjust for mobile screens
+            if (window.innerWidth < 768) {
+                width = Math.floor(containerWidth / charWidth);
+                height = Math.floor(containerHeight / lineHeight);
+            } else {
+                width = Math.min(150, Math.max(60, Math.floor(containerWidth / charWidth)));
+                height = Math.max(20, Math.floor(containerHeight / lineHeight));
+            }
         }
         
         function generateWave() {
@@ -151,15 +172,17 @@
             mouseY = (touch.clientY - rect.top) / rect.height;
         });
         
-        // Scroll to zoom
-        window.addEventListener('wheel', (e) => {
-            if (e.ctrlKey) {
-                e.preventDefault();
-                fontSize = Math.max(8, Math.min(20, fontSize + (e.deltaY > 0 ? -1 : 1)));
-                waveContainer.style.fontSize = fontSize + 'px';
-                updateDimensions();
-            }
-        });
+        // Scroll to zoom (disabled on mobile)
+        if (window.innerWidth > 768) {
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    fontSize = Math.max(8, Math.min(20, fontSize + (e.deltaY > 0 ? -1 : 1)));
+                    waveContainer.style.fontSize = fontSize + 'px';
+                    updateDimensions();
+                }
+            });
+        }
 
         // Handle window resize
         window.addEventListener('resize', () => {
