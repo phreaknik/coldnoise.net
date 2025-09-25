@@ -1,4 +1,4 @@
-baseURL = 'https://phreaknik.github.io/coldnoise.net/'
+baseURL = 'https://coldnoise.net/'
 languageCode = 'en-us'
 title = 'Cold Noise Blog'
 theme = 'plague'
