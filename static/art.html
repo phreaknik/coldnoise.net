@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive ASCII Wave Animation</title>
     <style>
+        /* CSS variables passed from parent document */
         body {
             margin: 0;
             padding: 0;
-            background: var(--background-color, #141414);
+            background: var(--background-color);
             font-family: 'Courier New', monospace;
             overflow: hidden;
             display: flex;
@@ -16,7 +17,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            color: var(--link-color, #aa90f9);
+            color: var(--text-color);
             position: relative;
         }
         
@@ -28,10 +29,11 @@
             text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
             cursor: crosshair;
             user-select: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
         }
         
         .wave-line {
@@ -50,13 +52,15 @@
 
     <script>
         const waveContainer = document.getElementById('wave-container');
-        
+
         let width = 80;
         let height = 30;
+        let fontSize = 14;
+
         const waveChars = ['~', '≈', '∼', '~', '～', '〜', '⁓', '˜'];
         const peakChars = ['▓', '▒', '░', '█', '▄', '▀'];
         const sparkleChars = ['✦', '✧', '⋆', '✵', '✶', '✷', '✸'];
-        
+
         let time = 0;
         const waveSpeed = 0.05;
         const waveHeight = 5;
@@ -64,7 +68,18 @@
         const density = 5;
         let mouseX = 0.5;
         let mouseY = 0.5;
-        let fontSize = 14;
+
+        // Dynamically adjust dimensions based on viewport
+        function updateDimensions() {
+            const rect = waveContainer.getBoundingClientRect();
+            const containerWidth = rect.width - 40; // Account for padding
+            const containerHeight = rect.height - 40; // Account for padding
+            const charWidth = fontSize * 0.6;
+            const lineHeight = fontSize * 1.2;
+            // Slightly reduce width to prevent horizontal overflow
+            width = Math.min(150, Math.max(60, Math.floor(containerWidth / charWidth) - 2));
+            height = Math.max(30, Math.floor(containerHeight / lineHeight));
+        }
         
         function generateWave() {
             let output = '';
@@ -142,13 +157,34 @@
                 e.preventDefault();
                 fontSize = Math.max(8, Math.min(20, fontSize + (e.deltaY > 0 ? -1 : 1)));
                 waveContainer.style.fontSize = fontSize + 'px';
+                updateDimensions();
             }
         });
-        
-        
-        
-        // Start animation
-        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            updateDimensions();
+        });
+
+        // Listen for color updates via postMessage
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'setColors') {
+                console.log('Received colors via postMessage:', event.data);
+                if (event.data.textColor) {
+                    document.documentElement.style.setProperty('--text-color', event.data.textColor);
+                }
+                if (event.data.bgColor) {
+                    document.documentElement.style.setProperty('--background-color', event.data.bgColor);
+                }
+            }
+        });
+
+        // Initialize after a short delay to ensure container is rendered
+        setTimeout(() => {
+            updateDimensions();
+            // Start animation
+            animate();
+        }, 10);
     </script>
 </body>
 </html>
