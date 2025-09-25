@@ -1,6 +1,6 @@
 baseURL = 'https://phreaknik.github.io/coldnoise.net/'
 languageCode = 'en-us'
-title = 'Thermal Noise H8r'
+title = 'Cold Noise Blog'
 theme = 'plague'
 enableEmoji = true
 
@@ -11,7 +11,7 @@ enableEmoji = true
 
 [params]
   copyright = "© 2024 John Boyd"
-  siteHeaderText = "Thermal Noise H8r"
+  siteHeaderText = "Cold Noise Blog"
   siteFooterText = """\
     Hand-crafted by a genuine human. Though honestly, an LLM would probably be
     more entertaining.\
