@@ -12,10 +12,7 @@ enableEmoji = true
 [params]
   copyright = "© 2024 John Boyd"
   siteHeaderText = "Cold Noise Blog"
-  siteFooterText = """\
-    Hand-crafted by a genuine human. Though honestly, an LLM would probably be
-    more entertaining.\
-    """
+  siteFooterText = ""
 
   # Color scheme options:
   # - "default" (auto dark/light based on user preference)
