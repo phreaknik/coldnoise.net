@@ -89,4 +89,9 @@ per-core CPU usage:
 
 ## Closing Thoughts
 
-It's a bit of a hack, but its my hack 🙃
+This was a quick and dirty solution. There's a few things I might've done
+differently, if this was more than just a quick script for some cosmetic eye
+candy; e.g. making parameters easier to tweak, or re-thinking the dot-levels,
+etc. That said, I'm more excited by how little effort it took to build
+something genuinely useful, and I don't want to ruin that balance of utility vs
+effort 😉
