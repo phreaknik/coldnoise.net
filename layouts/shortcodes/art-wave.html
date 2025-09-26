@@ -1,5 +1,11 @@
+{{/* Parse shortcode parameters */}}
+{{ $height := .Get "height" }}
+{{ $width := .Get "width" }}
+{{/* Generate unique ID for this instance */}}
+{{ $uniqueID := printf "wave-container-%d" now.UnixNano }}
+
 <style>
-    #wave-container {
+    #{{ $uniqueID }} {
         font-size: 14px;
         line-height: 1.2;
         white-space: pre;
@@ -18,7 +24,7 @@
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
-        #wave-container {
+        #{{ $uniqueID }} {
             font-size: 10px;
             padding: 5px;
             letter-spacing: 0.05em;
@@ -26,7 +32,7 @@
     }
 
     @media (max-width: 480px) {
-        #wave-container {
+        #{{ $uniqueID }} {
             font-size: 8px;
             padding: 2px;
             letter-spacing: 0;
@@ -34,14 +40,29 @@
     }
 </style>
 
-<div style="width: 100%; height: 100%; position: relative; overflow: hidden; flex: 1; display: flex;">
-    <div id="wave-container"></div>
+<div style="
+    {{- if $height -}}
+        height: {{ $height }}px;
+    {{- else -}}
+        height: 100%;
+    {{- end -}}
+    {{- if $width -}}
+        {{ $widthPercent := mul (float $width) 100 -}}
+        width: {{ $widthPercent }}%;
+    {{- else -}}
+        width: 100%;
+    {{- end -}}
+    position: relative;
+    overflow: hidden;
+    {{ if not $height }}flex: 1;{{ end }}
+    display: flex;">
+    <div id="{{ $uniqueID }}"></div>
 </div>
 
 <script>
     (function () {
         // Const parameters
-        const waveContainer = document.getElementById('wave-container');
+        const waveContainer = document.getElementById('{{ $uniqueID }}');
         const waveSpeed = 0.03;
         const waveHeight = 5;
         const turbulence = 0;
@@ -55,6 +76,8 @@
         let time = 0;
         let mouseX = 0.5;
         let mouseY = 0.5;
+        let width = 0;
+        let height = 0;
 
         // Dynamically adjust dimensions based on viewport
         function updateDimensions() {
