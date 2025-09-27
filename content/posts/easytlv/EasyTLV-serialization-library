@@ -1,0 +1,76 @@
+EasyTLV Write-up
+
+# EasyTLV: A Lightweight TLV Serialization Library
+
+[EasyTLV](https://github.com/phreaknik/easytlv) is a TLV (Tag-Length-Value) serialization library I built while developing smartcard drivers for the [GridPlus hardware wallet](https://gridplus.io/).
+
+## Why Am I Working With TLV
+
+TLV is an old serialization format that does not see much use in new applications today. In fact, with modern serialization schemes like Protobuf or CBOR, which offer much better tradeoffs for most applications, its a wonder people still use TLV. There is a niche still, however, where TLV is unlikely to be replaced. Particularly with incredibly resource constrained applications or security sensitive systems that place a high priority on code auditability.
+
+That last case is where I met TLV. I discovered TLV while working on java applet code to run in a secure element (think smart-cards: chip & pin bank card, tap-to-pay credit card, mobile SIM cards, etc). These environments are VERY resource constrained: ROM size *O(10KB)* and memory size *O(100B)*. There is no room for fancy serialization libraries. Additionally, these applications prioritize auditability, often requiring various banking industry certifications, which means every extra line of code is a liability. Here, TLV is king. Dead simple. No-code (de)serialization is possible (even if it creates ugly hard-coded patterns).
+
+## The Problem with Existing Solutions
+
+Most TLV implementations fall into two categories:
+1. Vendor-specific libraries locked behind NDAs
+2. Application-specific code tightly coupled to particular use cases
+
+In practice, it's fairly common for TLV parsing to look like this:
+
+```c
+// Brittle and error-prone
+if(rawData[0] == MY_TAG) {           
+    int len = rawData[1];            
+    memcpy(dest, &rawData[2], len);  
+}
+```
+
+This breaks when:
+- Tags require multiple bytes
+- Length exceeds 127 (requiring extended encoding)
+- Packets contain nested structures
+- Buffer boundaries aren't checked properly
+
+Even without those limitations, this code is not very ergonomic. Maintaining an application built like this can be a challenge, and the code complexity seems to grow quadratically with the complexity of the message protocol.
+
+## EasyTLV's Approach
+
+I strove to find a middle ground. Especially on the client-side (the terminal talking to the smart card, in my case) where resource constraints are somewhat relaxed, it makes no sense to build applications this way. EasyTLV is still very resource friendly, but provides an improved interface for defining message types and handling (de)serialization of arbitrarily complex messaging protocols.
+
+The library provides a simple token-based API:
+
+**Parsing:**
+```c
+ETLVToken tokens[10];
+int nTokens = 10;
+etlv_parse(tokens, &nTokens, rawData, dataLen);
+
+// Access data through token structures
+uint32_t value = ntohl(*(uint32_t*)tokens[0].val);
+```
+
+**Serialization:**
+```c
+ETLVToken tokens[] = {
+    {.tag = 0x20, .len = 4, .val = &myInt},
+    {.tag = 0x21, .len = dataLen, .val = dataPtr}
+};
+
+uint8_t output[256];
+int outLen = sizeof(output);
+etlv_serialize(output, &outLen, tokens, 2);
+```
+
+## Key Design Decisions
+
+- **No dynamic memory**: All operations use caller-provided buffers
+- **No dependencies**: Not even libc beyond memcpy
+- **Predictable performance**: O(n) for both parsing and serialization
+- **Clear error handling**: All functions return explicit error codes
+- **Support for extended length encoding**: Handles payloads larger than 127 bytes
+- **Nested TLV support**: Can parse hierarchical structures
+
+## Availability
+
+EasTLV is available under the MIT license at [github.com/phreaknik/easytlv](https://github.com/phreaknik/easytlv). It's a single-file library that can be dropped into any C project.
