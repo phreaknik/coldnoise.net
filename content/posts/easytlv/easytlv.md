@@ -1,6 +1,6 @@
 +++
 date = '2020-11-10T10:00:00-05:00'
-draft = true
+draft = false
 title = 'EasyTLV: A Lightweight TLV Serialization Library'
 categories = ['projects', 'software']
 tags = ['projects', 'embedded', 'protocol', 'microcontrollers', 'C', 'no-std', 'software']
