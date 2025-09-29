@@ -13,6 +13,7 @@ enableEmoji = true
   copyright = "© 2024 John Boyd"
   siteHeaderText = "Cold Noise Blog"
   siteFooterText = ""
+  customStylesheet = "/css/custom.css"
 
   # Color scheme options:
   # - "default" (auto dark/light based on user preference)

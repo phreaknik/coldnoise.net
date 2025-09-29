@@ -93,11 +93,9 @@ and then for comparison, I show the same implementation modified to incorporate
 the optimization. For this test, I am using a 12 bit anonymity set (4K members)
 and a batch size of 100.
 
-![Without-Gray-Code](without-gray-code.png)
-> Batch verfiy 100 proofs with Gray encoding: ~509ms / 100 proofs = ~5.09ms / proof
+{{< img src="without-gray-code.png" alt="Without-Gray-Code" caption="Batch verify 100 proofs with Gray encoding: ~509ms / 100 proofs = ~5.09ms / proof" >}}
 
-![With Gray Code](with-gray-code.png)
-> Batch verfiy 100 proofs without Gray encoding: ~1332ms / 100 proofs = ~13.3ms / proof
+{{< img src="with-gray-code.png" alt="With Gray Code" caption="Batch verify 100 proofs without Gray encoding: ~1332ms / 100 proofs = ~13.3ms / proof" >}}
 
 As you can see, I achieved nearly 3x speed-up. Furthermore, these improvements
 scale with both batch size and the parameter m, making the optimization

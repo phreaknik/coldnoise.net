@@ -20,10 +20,13 @@ characters to create a progress animation in a little 2x4 dot matrix. I decided
 to extend that clever trick and use a string of braille characters to draw a
 longer dot matrix; one large enough to render a small graph.
 
-This is what I came up with: ![Screenshot2](screenshot-short.png)
+This is what I came up with:
+
+{{< img src="screenshot-short.png" alt="Screenshot2" caption="CPU history graph module" >}}
 
 And here it is in the Waybar:
-![Screenshot1](screenshot-long.png)
+
+{{< img src="screenshot-long.png" alt="Screenshot1" caption="CPU graph integrated into Waybar" >}}
 
 ## The Implementation
 

@@ -1,0 +1,10 @@
+{{- $src := .Get "src" -}}
+{{- $alt := .Get "alt" | default "" -}}
+{{- $caption := .Get "caption" | default "" -}}
+
+<figure class="responsive-image">
+    <img src="{{ $src }}" alt="{{ $alt }}" loading="lazy">
+    {{- if $caption -}}
+    <figcaption>{{ $caption }}</figcaption>
+    {{- end -}}
+</figure>
