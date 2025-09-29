@@ -67,25 +67,21 @@ The sine waves would hopefully give a rippling water effect.
 
 I decided to juxtapose 3 waves moving different directions at different
 frequencies:
-
-{{< art-wave-demo1 height="100">}}
 ```javascript
 const wave1 = Math.sin((x * 0.1) + time) * waveHeight;
-```
-
-{{< art-wave-demo2 height="100">}}
-```javascript
 const wave2 = Math.sin((x * 0.05 + y * 0.1) - time * 0.7) * (waveHeight * 0.6);
-```
-
-{{< art-wave-demo3 height="100">}}
-```javascript
 const wave3 = Math.cos((x * 0.08 - y * 0.05) + time * 1.2) * (waveHeight * 0.4);
 ```
 
+{{< art-wave-demo1 height="100" caption="Wave 1: Simple horizontal sine wave" >}}
+
+{{< art-wave-demo2 height="100" caption="Wave 2: Diagonal wave with different frequency" >}}
+
+{{< art-wave-demo3 height="100" caption="Wave 3: Counter-diagonal cosine wave" >}}
+
 I'd hoped combining these waves would yield a nice rippling water effect. What
 I actually got was something like a lava-lamp:
-{{< art-wave-demo4 height="400">}}
+{{< art-wave-demo4 height="400" caption="Combined waves create a lava-lamp effect" >}}
 
 But hey, it's interesting. I decided to see where this was going. The simple
 '.' characters were boring, so I decided to substitute the characters based on
@@ -100,7 +96,7 @@ The character palette includes:
 - Periphery: `.` and `·` for subtle texture
 
 The combined result looked something like this:
-{{< art-wave-demo5 height="400">}}
+{{< art-wave-demo5 height="400" caption="Final result with character substitution and sparkles" >}}
 
 ## Interactivity
 

@@ -1,6 +1,7 @@
 {{/* Parse shortcode parameters */}}
 {{ $height := .Get "height" }}
 {{ $width := .Get "width" }}
+{{ $caption := .Get "caption" | default "" }}
 {{/* Generate unique ID for this instance */}}
 {{ $uniqueID := printf "wave-container-%d" now.UnixNano }}
 
@@ -177,3 +178,7 @@
         animate();
     })();
 </script>
+
+{{- if $caption -}}
+<figcaption style="margin-top: 0.8rem; font-size: 0.9em; font-style: italic; color: var(--text-secondary, #666); text-align: center;">{{ $caption }}</figcaption>
+{{- end -}}
