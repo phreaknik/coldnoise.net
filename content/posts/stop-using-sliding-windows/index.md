@@ -44,13 +44,17 @@ func (s *SlidingAverage) Update(value float64) float64 {
 Look at the unnecessary complexity. They're maintaining a buffer, shifting
 elements around, iterating through N values every single update. If you
 remember back to your digital signal processing class, you might recognize this
-as an FIR filter. FIR filters are not memory or CPU efficient. FIR filters have
-their place, but not here. Not for generic "signal smoothing".
+as an [FIR filter](https://en.wikipedia.org/wiki/Finite_impulse_response). FIR
+filters are not memory or CPU efficient. FIR filters have their place, but not
+here. Not for generic "signal smoothing".
 
 ## Use an EMA instead
 
-Take a look at this alternative approach, using an exponential moving average.
-It has just one state variable and just one line of math:
+Take a look at this alternative approach, using an exponential moving average
+(EMA). Being an [IIR
+filter](https://en.wikipedia.org/wiki/Infinite_impulse_response) it is able to
+offer similar (often better) results, with a fraction of the CPU & memory
+resources. The EMA has just one state variable and just one line of math:
 
 ```go
 // The elegant way
