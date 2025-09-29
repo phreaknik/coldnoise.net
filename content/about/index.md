@@ -1,9 +1,6 @@
 ---
 layout: standalone
 title: About
-menu:
-  main:
-    weight: 2
 ---
 
 <img src="headshot.jpeg" alt="Headshot photo" style="float: left; margin-right: 20px; margin-bottom: 10px; width: 200px;">
