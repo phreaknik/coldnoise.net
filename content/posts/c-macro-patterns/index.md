@@ -1,0 +1,430 @@
++++
+date = '2023-03-07T14:35:45-05:00'
+draft = false
+title = 'Practical C Macro Patterns for Embedded Driver Development'
++++
+C macros get a bad rap—often deservedly so. But when developing drivers for 
+embedded systems, carefully crafted macros can eliminate entire classes of bugs 
+while making your code more maintainable. In this post, I'll walk through 
+battle-tested macro patterns from production driver code, using examples from 
+[a driver I wrote](https://github.com/phreaknik/snsr288x) for the snsr288x 
+family of devices.
+
+## Beware Macro Expansion Bugs
+
+Before diving into useful macro patterns, first I want to emphasize the use of
+parentheses to avoid operator precedence issues that sneak up during macro
+expansion. Remember, macro expansion happens before any compilation steps, and
+deeply nested macro calls can expand into very large logic combinations very
+quickly.
+
+For example:
+```rust
+// WRONG: Missing parenthesis around parameters
+#define SQUARE(a) a * a
+
+int val = 2;
+// This assertion fails, because macro expansion changes the order of operations
+assert(SQUARE(val + 2) == 16);
+// Expands to:
+//      SQUARE(val + 2)
+//   => SQUARE(2 + 2)
+//   => 2 + 2 * 2 + 2
+//   => 2 + 4 + 2
+//   => 8
+// assert(8 == 16) fails
+```
+
+Wrapping macro parameters in parenthesis prevents this:
+```rust
+// Correct.
+#define SQUARE(a) ((a) * (a))
+
+// This assertion passes
+assert(SQUARE(val + 2) == 16);
+// Expands to:
+//      SQUARE(val + 2)
+//   => SQUARE(2 + 2)
+//   => (2 + 2) * (2 + 2)
+//   => 4 * 4
+//   => 16
+// assert(16 == 16) passes
+```
+
+Another common error occurs with the macro result itself:
+
+*This example is contrived, but variations of this can appear in ways you might
+not expect.*
+```rust
+// WRONG: Missing parentheses around entire expression
+#define BIT_0(val) (val) & 1
+
+// This assertion fails when used in expressions:
+assert((BIT_0(3) << 2) == 7)
+// Expands to:
+//      (BIT_0(3) << 2) == 7
+//   => ((3) & 1 << 2) == 7
+//   => (3 & 7) == 7
+//   => 3 == 7
+// assert(3 == 7) fails
+```
+
+Again, wrapping macro parameters in parenthesis prevents this:
+```rust
+// Correct.
+#define BIT_0(val) ((val) & 1)
+
+// This assertion passes.
+assert((BIT_0(3) << 2) == 7)
+// Expands to:
+//      (BIT_0(3) << 2) == 7
+//   => (((3) & 1) << 2) == 7
+//   => ((1) << 2) == 7
+//   => (7) == 7
+// assert(7 == 7) passes
+```
+
+Lastly, there is one scenario that can't be guarded against (that I know of),
+so just beware of it: the increment/decrement operators cannot be forced to
+evaluate only once. For example:
+```rust
+// Correct
+#define SQUARE(a) ((a) * (a))
+
+int val = 2;
+// This assertion still fails, because the increment operation happens twice
+// I'm not aware of a way to guard against this. Beware.
+assert(SQUARE(val++) == 9);
+// Expands to:
+//      SQUARE(val++)
+//   => ((val++) * (val++))
+//   => ((3) * (val++)) // val now = 3
+//   => ((3) * (4)) // 3++ = 4
+//   => 12
+// assert(12 == 9) fails
+```
+
+> **The Golden Rule**: When in doubt, add more parentheses. The cost is zero at
+runtime, and they prevent an entire class of subtle bugs. Every macro parameter
+should be wrapped in parentheses at every use, and the entire macro expansion
+should be wrapped in parentheses.
+
+
+## 1. Macros for Type Validation
+
+One of the most valuable uses of macros is creating validation helpers for
+enums and structs:
+```rust
+// Enum value range check
+#define SNSR288X_ENUM_WITHIN_RANGE(prefix, val) \
+  ((prefix##__MIN <= (val)) && (prefix##__MAX >= (val)))
+
+// Check struct fields for null pointers
+#define SNSR288X_CTX_IS_VALID(pctx) \
+  ((NULL != (pctx)) && SNSR288X_PHY_IS_VALID(&(pctx)->phy) && \
+   SNSR288X_DRIVER_CFG_IS_VALID(&(pctx)->drv_cfg))
+```
+
+These macros provide compile-time patterns that help ensure runtime safety.
+Every enum type defines `__MIN` and `__MAX` sentinels, allowing generic range
+validation. Struct validation macros can be composed hierarchically, checking
+both null pointers and the validity of nested structures. You can get more
+thorough than this, but I satisfy myself with checking for unexpected null
+pointers.
+
+This pattern catches invalid parameters at API boundaries:
+```rust
+// Configure the DAC and return the driver error type
+snsr288x_error_t snsr288x_configure_dac(
+    snsr288x_ctx_t* ctx,
+    snsr288x_dac_sel_t dac_sel,
+    const snsr288x_dac_cfg_t* dac_cfg)
+{
+  assert(SNSR288X_CTX_IS_VALID(ctx));
+  assert(SNSR288X_DAC_SEL_IS_VALID(dac_sel));
+  assert(SNSR288X_DAC_CFG_IS_VALID(dac_cfg));
+  // ...
+}
+```
+
+## 2. Register Field Manipulation
+
+Hardware register programming is error-prone when done manually. I prefer to
+define a set of get/set macros to encapsulate all of the bit manipulation
+necessary to access registers and their fields. Then, using the datasheet as a
+reference, I define register values as well as _MASK and _SHIFT values needed
+by the get/set macros.
+
+First, define get/set macros. These encapsulate the bit-shifting and masking
+logic:
+```rust
+// Get the bits of the specified field within the specified register, from
+// reg_val read from the device
+#define SNSR288X_GET_FIELD(reg, field, reg_val) \
+  (((reg_val) & SNSR288X_REG__##reg##__##field##__MASK) >> \
+   (SNSR288X_REG__##reg##__##field##__SHFT))
+
+// Set the bits of the specified field within the specified register.
+// Optionally reg_val initializes the state of the register.
+// field_val specifies the new integer value for that field
+#define SNSR288X_SET_FIELD(reg, field, reg_val, field_val) \
+  (((reg_val) & ~(SNSR288X_REG__##reg##__##field##__MASK)) | \
+   (((field_val) << (SNSR288X_REG__##reg##__##field##__SHFT)) & \
+    SNSR288X_REG__##reg##__##field##__MASK))
+```
+
+Then define register values (see
+[snsr288x_regs.h](https://github.com/phreaknik/snsr288x/blob/master/inc/snsr288x_regs.h)) for
+a thorough example. These may look something like:
+```rust
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__ADDR (0x05u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__VDD_OOR_EN__MASK (0x02u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__VDD_OOR_EN__SHFT (1)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__INVALID_CFG_EN__MASK (0x04u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__INVALID_CFG_EN__SHFT (2)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__EIS_CAL_DONE_EN__MASK (0x08u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__EIS_CAL_DONE_EN__SHFT (3)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__AC_DATA_RDY_EN__MASK (0x10u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__AC_DATA_RDY_EN__SHFT (4)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__FIFO_DATA_RDY_EN__MASK (0x40u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__FIFO_DATA_RDY_EN__SHFT (6)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__A_FULL_EN__MASK (0x80u)
+#define SNSR288X_REG__INTERRUPT_ENABLE_1__A_FULL_EN__SHFT (7)
+```
+
+Usage becomes self-documenting:
+```rust
+// ... first, read INTERRUPT_ENABLE_1 register.
+// ... assume reg_val points to this value
+
+// See if the VDD_OOR interrupt is enabled
+bool is_vdd_oor_interrupt_enabled =
+    SNSR288X_GET_FIELD(INTERRUPT_ENABLE_1, VDD_OOR_EN, *reg_val);
+
+// Update the register to set the VDD_OOR interrupt enable bit
+*reg_val = SNSR288X_SET_FIELD(
+    INTERRUPT_ENABLE_1, VDD_OOR_EN, *reg_val, true);
+```
+
+The register and field names appear explicitly in the code, making it easy to
+cross-reference with hardware documentation. The macros handle all the bit
+manipulation automatically, reducing the chances of human error when
+manipulating bits.
+
+## 3. Compile-Time Calculations
+
+Macros can compute values that would otherwise require magic numbers. One such
+example is when defining the allowable range of values. I like to use a
+range-size macro:
+```rust
+#define SNSR288X_ENUM_RANGE_SIZE(prefix) \
+  (1 + (prefix##__MAX) - (prefix##__MIN))
+```
+
+For example, in the snsr288x ADC config, we define up to 4 channels. The
+range-size macro can then be used to help validate challen selection later:
+```rust
+typedef enum
+{
+  SNSR288X_CHAN__1,
+  SNSR288X_CHAN__2,
+  SNSR288X_CHAN__3,
+  SNSR288X_CHAN__4,
+
+  SNSR288X_CHAN__MIN = SNSR288X_CHAN__1,
+  SNSR288X_CHAN__MAX = SNSR288X_CHAN__4
+} snsr288x_channel_t;
+#define SNSR288X_CHAN_IS_VALID(channel)                                        \
+  SNSR288X_ENUM_WITHIN_RANGE(SNSR288X_CHAN, channel)
+#define SNSR288X_MAX_NUM_CHANNELS SNSR288X_ENUM_RANGE_SIZE(SNSR288X_CHAN)
+```
+
+And we can go so far as to create a macro to easily dynamically compute the
+number of ADC channels from the `part_id` we read from the device:
+```rust
+// SENSOR2881 has 1 ADC channel
+#define NUM_CHANNELS_IN_PART(part_id) \
+  (((SNSR288X_ID__SENSOR2881 == (part_id)) * SENSOR2881_NUM_CHANNELS) + \
+   ((SNSR288X_ID__SENSOR2882 == (part_id)) * SENSOR2882_NUM_CHANNELS) + \
+   ((SNSR288X_ID__SENSOR2884 == (part_id)) * SENSOR2884_NUM_CHANNELS))
+```
+
+The `NUM_CHANNELS_IN_PART` macro is particularly interesting—it uses
+multiplication with boolean expressions to select the correct value without
+branching. This evaluates at compile time when possible, but thanks to compiler
+optimizations, it still ends up being very efficient in the cases where it
+needs to be evaluated at runtime.
+
+## 4. Register Address Calculations
+
+Hardware often has regular patterns in register layouts. Macros can exploit
+this:
+```rust
+#define FIRST_REG_IN_CHANNEL(chan) \
+  (((SNSR288X_CHAN__1 == (chan)) * \
+    SNSR288X_REG__SENSOR_1_CONFIGURATION_1__ADDR) + \
+   ((SNSR288X_CHAN__2 == (chan)) * \
+    SNSR288X_REG__SENSOR_2_CONFIGURATION_1__ADDR) + \
+   ((SNSR288X_CHAN__3 == (chan)) * \
+    SNSR288X_REG__SENSOR_3_CONFIGURATION_1__ADDR) + \
+   ((SNSR288X_CHAN__4 == (chan)) * \
+    SNSR288X_REG__SENSOR_4_CONFIGURATION_1__ADDR))
+```
+
+This allows code to work generically across hardware instances:
+```rust
+// Write a contiguous span of registers for the given ADC channel, to ammortize
+// the cost of the SPI communication overhead
+const uint8_t base_addr = FIRST_REG_IN_CHANNEL(channel);
+spi_write(ctx, base_addr, &ctx->scratch[0], 
+          SNSR288X_CHANNEL_ADDR_RANGE_SIZE);
+```
+
+## 5. Bulk Register Operations
+
+When dealing with register sequences, these macros reduce repetition:
+```rust
+#define REG_RANGE_SIZE(first_reg, last_reg) \
+  (1 + SNSR288X_REG__##last_reg##__ADDR - \
+   SNSR288X_REG__##first_reg##__ADDR)
+
+#define READ_REG_RANGE(dest, first_reg, last_reg) \
+  do { \
+    spi_read(ctx, \
+             SNSR288X_REG__##first_reg##__ADDR, \
+             (dest), \
+             REG_RANGE_SIZE(first_reg, last_reg)); \
+  } while (0)
+
+#define WRITE_REG_RANGE(dest, first_reg, last_reg) \
+  INIT_REGS(dest, first_reg, REG_RANGE_SIZE(first_reg, last_reg))
+```
+
+This makes register block operations concise and readable:
+```rust
+READ_REG_RANGE(&data[0], STATUS_1, STATUS_5);
+WRITE_REG_RANGE(&data[0], INTERRUPT_ENABLE_1, INTERRUPT_ENABLE_5);
+```
+
+## 6. FIFO Sample Decoding
+
+Complex data formats can be decoded declaratively:
+```rust
+#define SNSR288X_FIFO_SAMPLE_IS_16BITS(psamp) \
+  SNSR288X_ENUM_WITHIN_RANGE(SNSR288X_SAMPLE_TAG__U16, \
+                             (psamp)->bytes[0] & 0x0Fu)
+
+#define SNSR288X_GET_SAMPLE_TAG(psample) \
+  (snsr288x_sample_tag_t)( \
+    (SNSR288X_FIFO_SAMPLE_IS_16BITS(psample) * \
+     ((psample)->bytes[0] & 0x0F)) + \
+    (SNSR288X_FIFO_SAMPLE_IS_12BITS(psample) * \
+     ((psample)->bytes[0] & 0x0F) << 4) + \
+    (SNSR288X_FIFO_SAMPLE_IS_12BITS(psample) * \
+     ((psample)->bytes[1] & 0xF0) >> 4))
+```
+
+Users can decode samples without understanding the wire format details.
+
+## 7. Multi-Statement Macros: The `do { } while(0)` Idiom
+
+When a macro needs to execute multiple statements, wrapping them in 
+`do { } while(0)` ensures the macro behaves like a single statement in all 
+contexts.
+
+Without this wrapper, macros break in subtle ways:
+
+```rust
+// WRONG: Multiple statements without do-while wrapper
+#define CLEAR_AND_SET(reg, val) \
+  (reg) = 0; \
+  (reg) = (val)
+
+// This looks fine...
+CLEAR_AND_SET(my_register, 0x42);
+
+// But breaks with control flow!
+if (reset)
+  CLEAR_AND_SET(my_register, 0x42);
+
+// Expands to:
+if (reset) {
+  my_register = 0;  // Only this is inside the if!
+}
+my_register = 0x42;  // This always executes!
+```
+
+The `do { } while(0)` wrapper creates a proper statement block:
+
+```rust
+// CORRECT: Wrapped in do-while
+#define CLEAR_AND_SET(reg, val) \
+  do { \
+    (reg) = 0; \
+    (reg) = (val); \
+  } while (0)
+
+// Now it works correctly in all contexts
+if (reset)
+  CLEAR_AND_SET(my_register, 0x42);
+
+// Expands to:
+if (reset) {
+  do {
+    my_register = 0;
+    my_register = 0x42;
+  } while (0);
+}
+```
+
+Here's a real example from the driver code:
+
+```rust
+#define READ_REG_RANGE(dest, first_reg, last_reg) \
+  do { \
+    spi_read(ctx, \
+             SNSR288X_REG__##first_reg##__ADDR, \
+             (dest), \
+             REG_RANGE_SIZE(first_reg, last_reg)); \
+  } while (0)
+
+// Can be used safely anywhere a statement is expected:
+if (needs_status_update)
+  READ_REG_RANGE(&ctx->scratch[0], STATUS_1, STATUS_5);
+
+for (int i = 0; i < retry_count; i++)
+  READ_REG_RANGE(&buffer[i], DATA_START, DATA_END);
+```
+
+The `do { } while(0)` idiom ensures your multi-statement macros:
+- Work correctly in all control flow contexts (if/else, loops, switch)
+- Require a trailing semicolon (matching normal C statement syntax)
+- Don't accidentally consume the semicolon and break subsequent else clauses
+- Act as a single statement for scoping purposes
+
+## Best Practices
+
+I've given a lot of examples, but to sum it up, here is a non-exhaustive list
+of best practices I try to be aware of:
+1. **Always parenthesize macro arguments** to prevent operator precedence
+   issues
+1. **Create validation macros for every user-facing type** to catch errors at
+   API boundaries
+1. **Leverage token pasting (`##`)** to create naming conventions that scale
+   across register sets
+1. **Design macros to fail at compile time** when possible, rather than
+   producing runtime errors
+1. **Use `do { } while(0)` for multi-statement macros** to ensure they work
+   correctly in all contexts
+
+## Conclusion
+
+While C macros have limitations and can be misused, they're invaluable for
+embedded driver development when applied thoughtfully. They eliminate
+repetitive boilerplate, enforce naming conventions, improves type safety in a
+language that lacks it, and make code self-documenting by keeping hardware
+register names visible.
+
+The key is using macros for what they do well: compile-time text manipulation,
+constant calculations, and creating domain-specific abstractions that make the
+code's intent clear.
