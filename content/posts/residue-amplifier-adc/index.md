@@ -2,8 +2,6 @@
 date = '2016-04-26T10:00:00-05:00'
 draft = false
 title = 'Building an ADC on a Keychain'
-categories = ['projects', 'electronics']
-tags = ['electronics', 'hardware', 'project', 'semiconductor', 'adc']
 +++
 
 A few times recently, I've found myself wanting a memorable business card to

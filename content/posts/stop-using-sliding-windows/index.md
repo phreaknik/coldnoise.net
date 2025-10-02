@@ -2,8 +2,6 @@
 date = '2022-07-11T10:00:00-05:00'
 draft = false
 title = 'Stop Using Sliding Windows When You Just Need a Smooth Signal'
-categories = ['rants', 'software']
-tags = ['rant', 'math', 'software']
 +++
 
 I review a lot of code, and I keep seeing the same mistake over and over.

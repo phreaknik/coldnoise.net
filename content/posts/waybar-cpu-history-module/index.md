@@ -2,8 +2,6 @@
 date = '2025-09-23T23:48:48-05:00'
 draft = false
 title = 'Building a CPU Graph for Waybar'
-categories = ['projects']
-tags = ['software', 'hacks', 'hyprland', 'waybar', 'python', 'braille']
 +++
 
 Recently I decided to dive down the Hyprland rabbit hole. Rather than using an

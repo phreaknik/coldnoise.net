@@ -2,8 +2,6 @@
 date = '2025-09-25T10:00:00-05:00'
 draft = false
 title = 'Building an Interactive ASCII Wave Animation'
-categories = ['projects']
-tags = ['art', 'hacks', 'javascript', 'software']
 +++
 
 I recently wanted to add some artistic flair to my homepage — something that

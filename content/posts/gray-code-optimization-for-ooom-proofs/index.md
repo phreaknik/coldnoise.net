@@ -2,8 +2,6 @@
 date = '2021-02-16T10:00:00-05:00'
 draft = false
 title = 'Using the Gray Code to Optimize One-out-of-Many Proofs'
-categories = ['research', 'crypto']
-tags = ['research', 'protocol', 'crypto', 'cryptography', 'no-std', 'software', 'rust']
 +++
 *A performance optimization for zero-knowledge membership proofs based on the
 One-out-of-Many committment scheme.*
