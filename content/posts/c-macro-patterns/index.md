@@ -10,9 +10,21 @@ battle-tested macro patterns from production driver code, using examples from
 [a driver I wrote](https://github.com/phreaknik/snsr288x) for the snsr288x 
 family of devices.
 
+One question I get often: _when do you choose macros over inline functions?_
+
+In general, I prefer inline functions whenever possible, but there are two
+situations where I commonly reach for macros:
+1) **When the logic is simpler/cleaner with _generic_ parameters.** I don't
+want to write multiple versions of a function to support different type
+variations, if I can avoid it.
+1) **When I want to colocate type-specific logic with type definitions in
+header files.** Driver development is heavily centered around register
+definitions and device-specific data encodings, so I find it helpful to place
+related manipulation macros alongside the type definitions themselves.
+
 ## Beware Macro Expansion Bugs
 
-Before diving into useful macro patterns, first I want to emphasize the use of
+Before diving into useful macro patterns, I want to emphasize the use of
 parentheses to avoid operator precedence issues that sneak up during macro
 expansion. Remember, macro expansion happens before any compilation steps, and
 deeply nested macro calls can expand into very large logic combinations very
@@ -35,7 +47,7 @@ assert(DOUBLE(3 + 2) == 10);
 
 Wrapping macro parameters in parenthesis prevents this:
 ```rust
-// WRONG: Missing parenthesis around parameters
+// Correct.
 #define DOUBLE(a) (2 * (a))
 
 // This assertion passes
@@ -74,8 +86,8 @@ assert(SQUARE(val++) == 9);
 ```
 
 The problem is that the macro argument is used multiple times in the macro
-definition. Some compilers provide tools to solve this, like GNU statement
-expression:
+definition. Some compilers provide tools to solve this, such as the `typeof`
+extension in GCC:
 ```rust
 // Correct in GNU/Clang only :/
 #define SQUARE(a) ({ \
@@ -95,10 +107,12 @@ static inline int square(int a) {
 > **Axiom 2**: If you cannot avoid multiple uses of a macro argument, use an
 > inline function instead.
 
+## Useful Macro Patterns
+
 Now, on to the macro patterns that have saved me the most headaches in
 production...
 
-## 1. Macros for Type Validation
+### 1. Macros for Type Validation
 
 One of the most valuable uses of macros is creating validation helpers for
 enums and structs:
@@ -116,8 +130,8 @@ enums and structs:
 These macros provide compile-time patterns that help ensure runtime safety.
 Every enum type defines `__MIN` and `__MAX` sentinels, allowing generic range
 validation. Struct validation macros can be composed hierarchically, checking
-both null pointers and the validity of nested structures. You can get more
-thorough than this, but I satisfy myself with checking for unexpected null
+both null pointers and the validity of nested structures. You can be more
+thorough than this, but I'm satisfied with checking for unexpected null
 pointers.
 
 This pattern catches invalid parameters at API boundaries:
@@ -135,16 +149,15 @@ snsr288x_error_t snsr288x_configure_dac(
 }
 ```
 
-## 2. Register Field Manipulation
+### 2. Register Field Manipulation
 
-Hardware register programming is error-prone when done manually. I prefer to
-define a set of get/set macros to encapsulate all of the bit manipulation
+Hardware register programming is error-prone when done manually. I prefer
+defining a set of get/set macros to encapsulate all of the bit manipulation
 necessary to access registers and their fields. Then, using the datasheet as a
 reference, I define register values as well as _MASK and _SHIFT values needed
 by the get/set macros.
 
-First, define get/set macros. These encapsulate the bit-shifting and masking
-logic:
+First, define get/set macros. These encapsulate the bit manipulation logic:
 ```rust
 // Get the bits of the specified field within the specified register, from
 // reg_val read from the device
@@ -180,7 +193,7 @@ a thorough example. These may look something like:
 #define SNSR288X_REG__INTERRUPT_ENABLE_1__A_FULL_EN__SHFT (7)
 ```
 
-Usage becomes self-documenting:
+Usage is self-documenting:
 ```rust
 // ... first, read INTERRUPT_ENABLE_1 register.
 // ... assume reg_val points to this value
@@ -199,7 +212,7 @@ cross-reference with hardware documentation. The macros handle all the bit
 manipulation automatically, reducing the chances of human error when
 manipulating bits.
 
-## 3. Compile-Time Calculations
+### 3. Compile-Time Calculations
 
 Macros can compute values that would otherwise require magic numbers. One such
 example is when defining the allowable range of values. I like to use a
@@ -210,7 +223,7 @@ range-size macro:
 ```
 
 For example, in the snsr288x ADC config, we define up to 4 channels. The
-range-size macro can then be used to help validate challen selection later:
+range-size macro can then be used to help validate channel selection later:
 ```rust
 typedef enum
 {
@@ -243,7 +256,7 @@ branching. This evaluates at compile time when possible, but thanks to compiler
 optimizations, it still ends up being very efficient in the cases where it
 needs to be evaluated at runtime.
 
-## 4. Register Address Calculations
+### 4. Register Address Calculations
 
 Hardware often has regular patterns in register layouts. Macros can exploit
 this:
@@ -268,7 +281,7 @@ spi_write(ctx, base_addr, &ctx->scratch[0],
           SNSR288X_CHANNEL_ADDR_RANGE_SIZE);
 ```
 
-## 5. Bulk Register Operations
+### 5. Bulk Register Operations
 
 When dealing with register sequences, these macros reduce repetition:
 ```rust
@@ -294,9 +307,16 @@ READ_REG_RANGE(&data[0], STATUS_1, STATUS_5);
 WRITE_REG_RANGE(&data[0], INTERRUPT_ENABLE_1, INTERRUPT_ENABLE_5);
 ```
 
-## 6. FIFO Sample Decoding
+### 6. Encapsulating Verbose Data Operations
 
-Complex data formats can be decoded declaratively:
+This one is perhaps the most obvious use of macros: to encapsulate a bit of
+verbose logic into something much less verbost. I felt this post would be
+incomplete without such an example, though, so I decided to pull one of the
+more interesting examples out of the snsr288x drivers.
+
+In this example, `SNSR288X_GET_SAMPLE_TAG(psample)` reads a specially encoded
+data sample from the sensor and decodes the sample to extract just its tag
+value:
 ```rust
 #define SNSR288X_FIFO_SAMPLE_IS_16BITS(psamp) \
   SNSR288X_ENUM_WITHIN_RANGE(SNSR288X_SAMPLE_TAG__U16, \
@@ -312,9 +332,7 @@ Complex data formats can be decoded declaratively:
      ((psample)->bytes[1] & 0xF0) >> 4))
 ```
 
-Users can decode samples without understanding the wire format details.
-
-## 7. Multi-Statement Macros: The `do { } while(0)` Idiom
+### 7. Multi-Statement Macros: The `do { } while(0)` Idiom
 
 When a macro needs to execute multiple statements, wrapping them in 
 `do { } while(0)` ensures the macro behaves like a single statement in all 
@@ -407,12 +425,10 @@ of best practices I try to be aware of:
 
 ## Conclusion
 
-While C macros have limitations and can be misused, they're invaluable for
-embedded driver development when applied thoughtfully. They eliminate
-repetitive boilerplate, enforce naming conventions, improves type safety in a
-language that lacks it, and make code self-documenting by keeping hardware
-register names visible.
+There's a fine balance to strike when writing C macros. When done well, they
+can drastically improve the robustness and readability of a codebase. I find
+this especially true in device drivers, whose logic is riddled with bespoke
+register definitions and bit manipulations.
 
-The key is using macros for what they do well: compile-time text manipulation,
-constant calculations, and creating domain-specific abstractions that make the
-code's intent clear.
+Of course, I would be remiss if I did not mention that most of this effort is
+unnecessary in modern languages like Rust :)
