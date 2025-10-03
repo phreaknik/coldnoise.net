@@ -124,10 +124,10 @@ Host nas
 	User phreaknik
 	IdentityFile ~/.ssh/id_ed25519.phreaknik
 
-# Root user on my NAS box (different user, same SSH key)
-Host nas-root
+# My wife's user on my NAS (just use my personal key for this)
+Host nas
 	HostName 192.168.1.101
-	User root
+	User mawife
 	IdentityFile ~/.ssh/id_ed25519.phreaknik
 ```
 
@@ -135,16 +135,16 @@ Now I can SSH into any of these servers much more easily:
 
 ```bash
 # Login to the work server at 1.2.3.4 with key ~/.ssh/id_ed25519.work
-ssh box1
+ssh workuser@box1
 
 # Login to the fiatmine dev server
-ssh fiatmine
+ssh workuser@fiatmine
 
 # Login to my NAS with my personal user
-ssh nas
+ssh phreaknik@nas
 
-# Do some admin work on my NAS as root
-ssh nas-root
+# Do some admin work in my wife's account on our NAS
+ssh mawife@nas
 ```
 
 ## Conclusion
