@@ -21,81 +21,50 @@ quickly.
 For example:
 ```rust
 // WRONG: Missing parenthesis around parameters
-#define SQUARE(a) a * a
+#define DOUBLE(a) 2 * a
 
-int val = 2;
 // This assertion fails, because macro expansion changes the order of operations
-assert(SQUARE(val + 2) == 16);
-// Expands to:
-//      SQUARE(val + 2)
-//   => SQUARE(2 + 2)
-//   => 2 + 2 * 2 + 2
-//   => 2 + 4 + 2
+assert(DOUBLE(3 + 2) == 10);
+// Macro expansion:
+//      DOUBLE(3 + 2)
+//   => 2 * 3 + 2
+//   => 6 + 2
 //   => 8
-// assert(8 == 16) fails
+// assert(8 == 10) fails
 ```
 
 Wrapping macro parameters in parenthesis prevents this:
 ```rust
-// Correct.
-#define SQUARE(a) ((a) * (a))
+// WRONG: Missing parenthesis around parameters
+#define DOUBLE(a) (2 * (a))
 
 // This assertion passes
-assert(SQUARE(val + 2) == 16);
-// Expands to:
-//      SQUARE(val + 2)
-//   => SQUARE(2 + 2)
-//   => (2 + 2) * (2 + 2)
-//   => 4 * 4
-//   => 16
-// assert(16 == 16) passes
+assert(DOUBLE(3 + 2) == 10);
+// Macro expansion:
+//      DOUBLE(3 + 2)
+//   => (2 * (3 + 2))
+//   => (2 * 5)
+//   => 10
+// assert(10 == 10) passes
 ```
 
-Another common error occurs with the macro result itself:
+> **Axiom 1**: When in doubt, add more parentheses. The cost is zero at
+> runtime, and they prevent an entire class of subtle bugs. Every macro
+> parameter should be wrapped in parentheses at every use, and the entire macro
+> expansion should be wrapped in parentheses.
 
-*This example is contrived, but variations of this can appear in ways you might
-not expect.*
+There is, however, one scenario that can't be guarded against (easily), so just
+beware of it: multiple use of an argument can lead to an error if the argument
+is a self-modifying expression, such as the increment/decrement operators. For
+example:
 ```rust
-// WRONG: Missing parentheses around entire expression
-#define BIT_0(val) (val) & 1
-
-// This assertion fails when used in expressions:
-assert((BIT_0(3) << 2) == 7)
-// Expands to:
-//      (BIT_0(3) << 2) == 7
-//   => ((3) & 1 << 2) == 7
-//   => (3 & 7) == 7
-//   => 3 == 7
-// assert(3 == 7) fails
-```
-
-Again, wrapping macro parameters in parenthesis prevents this:
-```rust
-// Correct.
-#define BIT_0(val) ((val) & 1)
-
-// This assertion passes.
-assert((BIT_0(3) << 2) == 7)
-// Expands to:
-//      (BIT_0(3) << 2) == 7
-//   => (((3) & 1) << 2) == 7
-//   => ((1) << 2) == 7
-//   => (7) == 7
-// assert(7 == 7) passes
-```
-
-Lastly, there is one scenario that can't be guarded against (that I know of),
-so just beware of it: the increment/decrement operators cannot be forced to
-evaluate only once. For example:
-```rust
-// Correct
+// WRONG: a is used twice
 #define SQUARE(a) ((a) * (a))
 
-int val = 2;
 // This assertion still fails, because the increment operation happens twice
-// I'm not aware of a way to guard against this. Beware.
+int val = 2;
 assert(SQUARE(val++) == 9);
-// Expands to:
+// Macro expansion:
 //      SQUARE(val++)
 //   => ((val++) * (val++))
 //   => ((3) * (val++)) // val now = 3
@@ -104,11 +73,30 @@ assert(SQUARE(val++) == 9);
 // assert(12 == 9) fails
 ```
 
-> **The Golden Rule**: When in doubt, add more parentheses. The cost is zero at
-runtime, and they prevent an entire class of subtle bugs. Every macro parameter
-should be wrapped in parentheses at every use, and the entire macro expansion
-should be wrapped in parentheses.
+The problem is that the macro argument is used multiple times in the macro
+definition. Some compilers provide tools to solve this, like GNU statement
+expression:
+```rust
+// Correct in GNU/Clang only :/
+#define SQUARE(a) ({ \
+    typeof(a) _tmp = (a); \
+    _tmp * _tmp; \
+})
+```
 
+But I don't recommend compiler-specific solutions. I would use an inline
+function instead of a macro, in this situation:
+```rust
+static inline int square(int a) {
+    return a * a;
+}
+```
+
+> **Axiom 2**: If you cannot avoid multiple uses of a macro argument, use an
+> inline function instead.
+
+Now, on to the macro patterns that have saved me the most headaches in
+production...
 
 ## 1. Macros for Type Validation
 
