@@ -12,6 +12,11 @@ ended up with some impressionist take on video noise... and I love it:
 
 {{< art-wave height="400">}}
 
+*Disclaimer: this is just a hack and NOT something I would recommend in a
+production setting. There are MUCH better ways of handling animations on
+websites. This was more about having some quick fun with some visualization
+ideas I had :)*
+
 ## Simple ASCII Animations
 
 For this animation, I decided to animate a grid of ASCII characters. To do
