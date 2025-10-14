@@ -14,11 +14,9 @@
     border-radius: 4px;
 }
 
+/* Basic figcaption styling - will be overridden by post-content rule below */
 .responsive-image figcaption {
     margin-top: 0.8rem;
-    font-size: 0.9em;
-    font-style: italic;
-    color: var(--text-secondary, #666);
     text-align: center;
 }
 
@@ -47,4 +45,11 @@
     .responsive-image figcaption {
         font-size: 0.8em;
     }
+}
+
+/* Override PaperMod's bold figcaption styling for responsive-image */
+.post-content .responsive-image figcaption {
+    font-weight: normal !important;
+    font-size: 14px;
+    color: var(--primary);
 }
