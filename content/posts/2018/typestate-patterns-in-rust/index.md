@@ -2,6 +2,8 @@
 date = '2018-08-13T00:31:27-05:00'
 draft = false
 title = 'The Typestate Pattern: Where the Rust Type System Shines'
+featured = true
+featuredWeight = 1
 +++
 
 If you've been writing Rust for a while, you've probably encountered a peculiar

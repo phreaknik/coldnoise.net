@@ -48,3 +48,135 @@
         font-size: 0.8em;
     }
 }
+
+/* Featured Posts Styles */
+.featured-posts {
+    margin: 3rem 0;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border, #e5e5e5);
+}
+
+.featured-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.featured-header h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--primary, #1a1a1a);
+    margin: 0;
+    position: relative;
+}
+
+.featured-header h2::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: var(--accent, #007acc);
+    margin: 0.5rem auto;
+    border-radius: 2px;
+}
+
+.featured-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.featured-entry {
+    background: var(--code-bg, #f8f9fa);
+    border: 1px solid var(--border, #e5e5e5);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+}
+
+.featured-entry:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.featured-content {
+    padding: 1.5rem;
+}
+
+.featured-entry-header h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+.featured-title-link {
+    color: var(--primary, #1a1a1a);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.featured-title-link:hover {
+    color: var(--accent, #007acc);
+    transition: color 0.2s ease;
+}
+
+.featured-summary {
+    margin: 1rem 0;
+    color: var(--text-secondary, #666);
+    line-height: 1.6;
+}
+
+.featured-summary p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.featured-meta {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border, #e5e5e5);
+    font-size: 0.875rem;
+    color: var(--text-secondary, #666);
+}
+
+/* Mobile responsiveness for featured posts */
+@media (max-width: 768px) {
+    .featured-posts {
+        margin: 2rem 0;
+        padding: 1.5rem 0;
+    }
+
+    .featured-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 0 1rem;
+    }
+
+    .featured-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .featured-content {
+        padding: 1.25rem;
+    }
+
+    .featured-entry-header h3 {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .featured-posts {
+        margin: 1.5rem 0;
+    }
+
+    .featured-content {
+        padding: 1rem;
+    }
+
+    .featured-summary p {
+        font-size: 0.9rem;
+    }
+}

@@ -21,6 +21,14 @@ home = ["HTML", "RSS", "JSON"]
   disableThemeToggle = false
   ShowToc = true
 
+  # Custom CSS
+  [params.assets]
+    favicon = "<link / absolute url>"
+    disableFingerprinting = false
+    disableHLJS = false
+  [[params.assets.customCSS]]
+    src = "/css/custom.css"
+
   # Site info
   copyright = "© 2025 John Boyd"
   description = "Personal blog by John Boyd"

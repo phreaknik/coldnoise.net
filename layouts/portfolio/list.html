@@ -20,7 +20,7 @@
 </div>
 {{- end }}
 
-{{- $pages := .RegularPages.ByParam "weight" }}
+{{- $pages := sort .RegularPages "Params.weight" }}
 
 <div class="portfolio-grid">
 {{- range $pages }}

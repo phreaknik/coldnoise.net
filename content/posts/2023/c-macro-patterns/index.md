@@ -2,6 +2,8 @@
 date = '2023-03-07T14:35:45-05:00'
 draft = false
 title = 'Practical C Macro Patterns for Embedded Driver Development'
+featured = true
+featuredWeight = 3
 +++
 C macros get a bad rap—often deservedly so. But when developing drivers for 
 embedded systems, carefully crafted macros can eliminate entire classes of bugs 

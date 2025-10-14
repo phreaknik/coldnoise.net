@@ -2,6 +2,8 @@
 date = '2025-10-02T09:27:24-05:00'
 draft = false
 title = 'Mastering SSH Config: Stop Juggling Keys, Ports, and Hostnames'
+featured = true
+featuredWeight = 2
 +++
 If you're like me, you use SSH constantly. On any given day, I use SSH to
 access GitHub, log in to various servers at work, and connect to my self-hosted
