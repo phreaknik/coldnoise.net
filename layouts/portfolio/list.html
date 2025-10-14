@@ -1,0 +1,179 @@
+{{- define "main" }}
+
+{{- if not .IsHome | and .Title }}
+<header class="page-header">
+  {{- partial "breadcrumbs.html" . }}
+  <h1>{{ .Title }}</h1>
+  {{- if .Description }}
+  <div class="post-description">
+    {{ .Description | markdownify }}
+  </div>
+  {{- end }}
+</header>
+{{- end }}
+
+{{- if .Content }}
+<div class="post-content">
+  {{- if not (.Param "disableAnchoredHeadings") }}
+  {{- partial "anchored_headings.html" .Content -}}
+  {{- else }}{{ .Content }}{{ end }}
+</div>
+{{- end }}
+
+{{- $pages := .RegularPages.ByParam "weight" }}
+
+<div class="portfolio-grid">
+{{- range $pages }}
+<article class="portfolio-entry">
+  {{- if .Params.featured_image }}
+  <div class="portfolio-cover">
+    <img loading="lazy" src="{{ .RelPermalink }}{{ .Params.featured_image }}" alt="{{ .Title }}" />
+  </div>
+  {{- end }}
+
+  <div class="portfolio-content">
+    <header class="portfolio-header">
+      <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+      {{- if .Params.description }}
+      <p class="portfolio-description">{{ .Params.description }}</p>
+      {{- end }}
+    </header>
+
+    {{- if .Params.technologies }}
+    <div class="portfolio-technologies">
+      {{- range .Params.technologies }}
+      <span class="tech-tag">{{ . }}</span>
+      {{- end }}
+    </div>
+    {{- end }}
+
+    <footer class="portfolio-links">
+      {{- if .Params.github_url }}
+      <a href="{{ .Params.github_url }}" class="portfolio-link" target="_blank" rel="noopener">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+        </svg>
+        Code
+      </a>
+      {{- end }}
+      {{- if .Params.demo_url }}
+      <a href="{{ .Params.demo_url }}" class="portfolio-link" target="_blank" rel="noopener">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          <polyline points="15,3 21,3 21,9"></polyline>
+          <line x1="10" y1="14" x2="21" y2="3"></line>
+        </svg>
+        Demo
+      </a>
+      {{- end }}
+      <a href="{{ .Permalink }}" class="portfolio-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+        </svg>
+        Details
+      </a>
+    </footer>
+  </div>
+</article>
+{{- end }}
+</div>
+
+<style>
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.portfolio-entry {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--entry);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portfolio-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-cover {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.portfolio-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-content {
+  padding: 1.5rem;
+}
+
+.portfolio-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.portfolio-header h2 a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.portfolio-header h2 a:hover {
+  text-decoration: underline;
+}
+
+.portfolio-description {
+  color: var(--secondary);
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.portfolio-technologies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tech-tag {
+  background: var(--theme);
+  color: var(--entry);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.portfolio-links {
+  display: flex;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+.portfolio-link {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.portfolio-link:hover {
+  text-decoration: underline;
+}
+
+.portfolio-link svg {
+  width: 16px;
+  height: 16px;
+}
+</style>
+
+{{- end }}{{- /* end main */ -}}
