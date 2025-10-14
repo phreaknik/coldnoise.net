@@ -1,0 +1,129 @@
+{{- define "main" }}
+
+{{- if not .IsHome | and .Title }}
+<header class="page-header">
+  {{- partial "breadcrumbs.html" . }}
+  <h1>{{ .Title }}</h1>
+  {{- if .Description }}
+  <div class="post-description">
+    {{ .Description | markdownify }}
+  </div>
+  {{- end }}
+</header>
+{{- end }}
+
+{{- if .Content }}
+<div class="post-content">
+  {{- if not (.Param "disableAnchoredHeadings") }}
+  {{- partial "anchored_headings.html" .Content -}}
+  {{- else }}{{ .Content }}{{ end }}
+</div>
+{{- end }}
+
+{{- $pages := .RegularPages.ByParam "weight" }}
+
+<div class="portfolio-grid">
+{{- range $pages }}
+<article class="portfolio-entry">
+  {{- if .Params.cover.image }}
+  <div class="portfolio-cover">
+    <img loading="lazy" src="{{ .RelPermalink }}{{ .Params.cover.image }}" alt="{{ .Params.cover.alt | default .Title }}" />
+  </div>
+  {{- end }}
+
+  <div class="portfolio-content">
+    <header class="portfolio-header">
+      <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
+      {{- if .Description }}
+      <p class="portfolio-description">{{ .Description }}</p>
+      {{- end }}
+    </header>
+
+    {{- if (ne (.Param "hideSummary") true) }}
+    <div class="entry-content">
+      <p>{{ .Summary | plainify | htmlUnescape }}{{ if .Truncated }}...{{ end }}</p>
+    </div>
+    {{- end }}
+  </div>
+  <a class="entry-link" aria-label="post link to {{ .Title | plainify }}" href="{{ .Permalink }}"></a>
+</article>
+{{- end }}
+</div>
+
+
+<style>
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.portfolio-entry {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--entry);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.portfolio-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.portfolio-cover {
+  aspect-ratio: 16/9;
+  overflow: hidden;
+}
+
+.portfolio-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-content {
+  padding: 1.5rem;
+}
+
+.portfolio-header h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+}
+
+.portfolio-header h2 a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.portfolio-header h2 a:hover {
+  text-decoration: underline;
+}
+
+.portfolio-description {
+  color: var(--secondary);
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+}
+
+.portfolio-entry .entry-content {
+  margin-top: 1rem;
+}
+
+.portfolio-entry .entry-content p {
+  color: var(--content);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.portfolio-entry .entry-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+</style>
+
+{{- end }}{{- /* end main */ -}}
