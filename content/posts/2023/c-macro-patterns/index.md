@@ -115,26 +115,79 @@ production...
 ### 1. Macros for Type Validation
 
 One of the most valuable uses of macros is creating validation helpers for
-enums and structs:
-```rust
-// Enum value range check
-#define SNSR288X_ENUM_WITHIN_RANGE(prefix, val) \
-  ((prefix##__MIN <= (val)) && (prefix##__MAX >= (val)))
+enums and structs. First, to enable enum validation, I like to include `__MIN`
+and `__MAX` sentinals. Then I can define some helpful range validation macros
+to accompany it. See the `snsr288x_id_t` example below:
 
-// Check struct fields for null pointers
-#define SNSR288X_CTX_IS_VALID(pctx) \
-  ((NULL != (pctx)) && SNSR288X_PHY_IS_VALID(&(pctx)->phy) && \
-   SNSR288X_DRIVER_CFG_IS_VALID(&(pctx)->drv_cfg))
+```rust
+// Device identifiers
+typedef enum
+{
+  SNSR288X_ID__SNSR2881 = 0x32u,
+  SNSR288X_ID__SNSR2882 = 0x33u,
+  SNSR288X_ID__SNSR2884 = 0x34u,
+
+  SNSR288X_ID__MIN = SNSR288X_ID__SNSR2881,
+  SNSR288X_ID__MAX = SNSR288X_ID__SNSR2884
+} snsr288x_id_t;
+#define SNSR288X_ID_IS_VALID(id) SNSR288X_ENUM_WITHIN_RANGE(SNSR288X_ID, id)
+#define SNSR288X_NUM_IDS SNSR288X_ENUM_RANGE_SIZE(SNSR288X_ID)
+```
+At minimum, the `__MIN` and `__MAX` sentinals enable simpler/safer loops:
+
+```rust
+  // Loop over each valid part_id
+  for (snsr288x_id_t id = SNSR288X_ID__MIN; id < SNSR288X_ID__MAX; id++) {
+    // ...
+  }
+
 ```
 
-These macros provide compile-time patterns that help ensure runtime safety.
-Every enum type defines `__MIN` and `__MAX` sentinels, allowing generic range
-validation. Struct validation macros can be composed hierarchically, checking
-both null pointers and the validity of nested structures. You can be more
-thorough than this, but I'm satisfied with checking for unexpected null
-pointers.
+The `SNSR288X_NUM_IDS()` is very useful when you wish to know the number of
+possible values, for example when allocating memory:
 
-This pattern catches invalid parameters at API boundaries:
+```rust
+// Assign human readable names
+const char* part_name[SNSR288X_NUM_IDS()] = {
+  "snsr2881",
+  "snsr2882",
+  "snsr2884",
+}
+
+// Throws an error due to array size mismatch!
+const char* part_name[SNSR288X_NUM_IDS()] = {
+  "snsr2881",
+  "snsr2882",
+  "snsr2883", // Oops! This part ID isn't valid
+  "snsr2884", // Compile error! initializer exceeds the defined size of 3
+}
+```
+
+I also like to use macros to validate structs. Struct validation macros can be
+composed hierarchically, checking both null pointers and the validity of nested
+structures. In the example below, see that the `SNSR288X_DRIVER_CFG_IS_VALID()`
+macro checks for null pointers AND calls the `SNSR288X_ID_IS_VALID()` macro to
+validate the `part_id`:
+
+```rust
+// Driver configuration parameters
+typedef struct
+{
+  // Part ID of the connected device
+  snsr288x_id_t part_id;
+
+  // Time in milliseconds to wait before enabling data capture, after making
+  // configuration changes to the device. The default value used by the Generic
+  // EVK driver is 5ms, but your selection depends on the electrical
+  // characteristics of your sensor electrode design.
+  uint32_t settle_time_ms;
+} snsr288x_driver_cfg_t;
+#define SNSR288X_DRIVER_CFG_IS_VALID(pcfg)                                     \
+  ((NULL != (pcfg)) && SNSR288X_ID_IS_VALID((pcfg)->part_id))
+```
+
+I use macros like these extensively to sanitize inputs to function calls:
+
 ```rust
 // Configure the DAC and return the driver error type
 snsr288x_error_t snsr288x_configure_dac(
@@ -142,12 +195,17 @@ snsr288x_error_t snsr288x_configure_dac(
     snsr288x_dac_sel_t dac_sel,
     const snsr288x_dac_cfg_t* dac_cfg)
 {
+  // Sanitize inputs
   assert(SNSR288X_CTX_IS_VALID(ctx));
   assert(SNSR288X_DAC_SEL_IS_VALID(dac_sel));
   assert(SNSR288X_DAC_CFG_IS_VALID(dac_cfg));
   // ...
 }
 ```
+
+These macros can often be removed by compile-time optimizations, and the times
+where they _can't_ be optimized away are the times you'll be happy they're
+there.
 
 ### 2. Register Field Manipulation
 
